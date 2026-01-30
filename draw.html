@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DrawSpy Mobile by its_barath_46</title>
+    
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7831391436787169" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #ec4899;
+            --bg-fallback: #0f172a;
+            --card-glass: rgba(15, 23, 42, 0.6); 
+            --text: #ffffff; 
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background-color: var(--bg-fallback);
+            background-image: url('background.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--text); margin: 0; 
+            display: flex; flex-direction: column; /* Stack Card then Ad */
+            height: 100vh; overflow: hidden;
+        }
+
+        /* The Main Game Container */
+        .game-wrapper {
+            flex: 1; /* Takes all available space except the ad */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .card { 
+            width: 100%; max-width: 420px; height: 100%;
+            padding: 1.2rem; display: flex; flex-direction: column; align-items: center;
+            background: var(--card-glass); backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.15); border-radius: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); position: relative;
+        }
+
+        /* Dedicated Sticky Ad Area at Bottom */
+        .ad-sticky-footer {
+            width: 100%;
+            min-height: 60px; /* Minimum height for small mobile ads */
+            background: rgba(0, 0, 0, 0.4);
+            border-top: 1px solid var(--primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        @keyframes titleGlow {
+            0% { text-shadow: 0 0 10px rgba(99, 102, 241, 0.2); transform: scale(1); }
+            50% { text-shadow: 0 0 25px rgba(236, 72, 153, 0.6); transform: scale(1.02); }
+            100% { text-shadow: 0 0 10px rgba(99, 102, 241, 0.2); transform: scale(1); }
+        }
+
+        .glow { font-size: 2.5rem; font-weight: 900; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 10px 0; animation: titleGlow 3s ease-in-out infinite; }
+
+        .nav-btn { position: fixed; top: 15px; z-index: 101; width: 45px; height: 45px; border-radius: 50%; background: rgba(15, 23, 42, 0.8); border: 2px solid var(--primary); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        #home-btn { left: 15px; border-color: var(--secondary); display: none; }
+        #music-btn { right: 15px; }
+
+        .section { display: none; width: 100%; height: 100%; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .section.active { display: flex; }
+
+        button { background: var(--accent-gradient); color: white; border: none; padding: 14px; border-radius: 15px; font-weight: 800; width: 100%; cursor: pointer; margin-top: 12px; box-shadow: 0 4px 0 #4338ca; text-transform: uppercase; transition: 0.1s; }
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #4338ca; }
+        .btn-secondary { background: rgba(255,255,255,0.15); box-shadow: 0 4px 0 #000; }
+
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border-radius: 30px; display: none; flex-direction: column; padding: 25px; z-index: 200; overflow-y: auto; }
+
+        #canvas-container { flex-grow: 1; width: 100%; background: #fff; border-radius: 20px; border: 4px solid var(--primary); margin-bottom: 8px; touch-action: none; position: relative; }
+        canvas { width: 100%; height: 100%; border-radius: 16px; display: block; }
+        
+        .tools { display: flex; gap: 8px; width: 100%; margin-bottom: 5px; }
+        .tools button { margin: 0; padding: 8px; font-size: 0.7rem; background: #1e293b; }
+
+        .voting-grid { display: flex; flex-direction: column; gap: 6px; width: 100%; overflow-y: auto; }
+        .vote-btn { background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(255,255,255,0.2); padding: 12px; border-radius: 12px; color: white; font-weight: bold; }
+        .vote-btn.selected { border-color: var(--secondary); background: rgba(236, 72, 153, 0.2); }
+        .secret-box { width: 100%; background: rgba(0,0,0,0.4); padding: 20px 10px; border-radius: 20px; border: 3px solid var(--primary); font-size: 1.4rem; font-weight: 900; margin: 10px 0; }
+        .status-badge { background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<audio id="bg-music" loop><source src="background.mp3" type="audio/mpeg"></audio>
+<audio id="click-sfx"><source src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" type="audio/mpeg"></audio>
+
+<div id="home-btn" class="nav-btn" onclick="confirmGoHome()"><i class="bi bi-house-door-fill"></i></div>
+<div id="music-btn" class="nav-btn" onclick="toggleMusic()"><i class="bi bi-mic-mute-fill"></i></div>
+
+<div class="game-wrapper">
+    <div class="card">
+        <div id="menu-page" class="section active">
+            <h1 class="glow">DRAWSPY</h1>
+            <button onclick="showSection('setup-page')">PLAY GAME</button>
+            <button class="btn-secondary" onclick="toggleOverlay('rules-overlay', true)">RULES</button>
+            <button class="btn-secondary" onclick="toggleOverlay('credits-overlay', true)">CREDITS</button>
+        </div>
+
+        <div id="rules-overlay" class="overlay">
+            <h3>GAME RULES</h3>
+            <p style="text-align: left; font-size: 0.9rem; line-height: 1.5;">
+                • One player is the **Spy**, others are **Crew**.<br>
+                • Everyone gets the word except the Spy.<br>
+                • Vote to kick out the Spy.<br>
+                • If Crew is kicked, the Spy stays hidden!
+            </p>
+            <button onclick="toggleOverlay('rules-overlay', false)">GOT IT</button>
+        </div>
+
+        <div id="credits-overlay" class="overlay">
+            <h3>CREDITS</h3>
+            <p>Created by: <b>its_barath_46</b></p>
+            <button onclick="toggleOverlay('credits-overlay', false)">CLOSE</button>
+        </div>
+
+        <div id="setup-page" class="section">
+            <h1>PLAYERS</h1>
+            <input type="number" id="player-count" value="4" min="3" max="10" style="width:80px; padding:15px; font-size:1.5rem; border-radius:15px; text-align:center; background:#000; color:#fff; border:2px solid var(--primary);">
+            <button onclick="initGame()" style="margin-top:20px;">START MISSION</button>
+            <button class="btn-secondary" onclick="showSection('menu-page')">BACK</button>
+        </div>
+
+        <div id="reveal-page" class="section">
+            <div id="pass-view">
+                <p>Pass to Player <span id="next-p-num">1</span></p>
+                <button onclick="revealSecret()">VIEW ROLE</button>
+            </div>
+            <div id="secret-view" style="display:none;">
+                <div class="secret-box" id="secret-display">---</div>
+                <button onclick="nextPlayer()">I UNDERSTAND</button>
+            </div>
+        </div>
+
+        <div id="play-page" class="section">
+            <div class="tools">
+                <button onclick="undoStroke()">UNDO</button>
+                <button onclick="clearCanvas()">CLEAR</button>
+            </div>
+            <div id="canvas-container"><canvas id="sketchpad"></canvas></div>
+            <button onclick="initVotingRound()">VOTE SPY</button>
+        </div>
+
+        <div id="council-page" class="section">
+            <div class="status-badge">THE COUNCIL</div>
+            <div class="voting-grid" id="council-grid"></div>
+            <div id="selection-confirm" style="visibility: hidden; width: 100%;">
+                <button onclick="executeVote()">CONFIRM ELIMINATION</button>
+            </div>
+        </div>
+
+        <div id="result-page" class="section">
+            <div class="secret-box" id="result-message">---</div>
+            <button onclick="location.reload()">NEW GAME</button>
+        </div>
+    </div>
+</div>
+
+<div class="ad-sticky-footer">
+    <ins class="adsbygoogle"
+         style="display:inline-block;width:320px;height:50px"
+         data-ad-client="ca-pub-7831391436787169"
+         data-ad-slot="YOUR_AD_SLOT_ID"></ins>
+    <script>
+         (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+</div>
+
+<script>
+    const wordList = ["Sun", "Apple", "House", "Tree", "Heart", "Fish", "Star", "Car", "Door", "Cake", "Moon", "Pizza", "Cat", "Rocket", "Banana", "Ghost"];
+    let state = { total: 0, players: [], currentIdx: 0, word: "", history: [] };
+    let selectedVictimId = null;
+
+    const canvas = document.getElementById('sketchpad');
+    const ctx = canvas.getContext('2d');
+    const music = document.getElementById('bg-music');
+
+    function toggleOverlay(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.getElementById('home-btn').style.display = (id === 'menu-page') ? 'none' : 'flex';
+        if(id === 'play-page') setTimeout(resizeCanvas, 100);
+    }
+
+    function toggleMusic() {
+        if (music.paused) { music.play(); document.getElementById('music-btn').innerHTML = '<i class="bi bi-mic-fill"></i>'; }
+        else { music.pause(); document.getElementById('music-btn').innerHTML = '<i class="bi bi-mic-mute-fill"></i>'; }
+    }
+
+    function initGame() {
+        state.total = parseInt(document.getElementById('player-count').value);
+        state.word = wordList[Math.floor(Math.random() * wordList.length)];
+        const spyIdx = Math.floor(Math.random() * state.total);
+        state.players = Array.from({length: state.total}, (_, i) => ({ id: i + 1, isSpy: i === spyIdx }));
+        state.currentIdx = 0;
+        setupReveal();
+        showSection('reveal-page');
+    }
+
+    function setupReveal() {
+        document.getElementById('next-p-num').innerText = state.players[state.currentIdx].id;
+        document.getElementById('pass-view').style.display = 'block';
+        document.getElementById('secret-view').style.display = 'none';
+    }
+
+    function revealSecret() {
+        const p = state.players[state.currentIdx];
+        document.getElementById('secret-display').innerText = p.isSpy ? "YOU ARE THE SPY" : state.word;
+        document.getElementById('pass-view').style.display = 'none';
+        document.getElementById('secret-view').style.display = 'block';
+    }
+
+    function nextPlayer() {
+        state.currentIdx++;
+        if (state.currentIdx < state.total) setupReveal();
+        else showSection('play-page');
+    }
+
+    function resizeCanvas() {
+        const container = document.getElementById('canvas-container');
+        canvas.width = container.clientWidth; canvas.height = container.clientHeight;
+        ctx.strokeStyle = "#1e293b"; ctx.lineWidth = 5; ctx.lineCap = "round";
+    }
+
+    function initVotingRound() {
+        const grid = document.getElementById('council-grid');
+        grid.innerHTML = '';
+        state.players.forEach(p => {
+            const btn = document.createElement('div');
+            btn.className = 'vote-btn';
+            btn.innerText = `PLAYER ${p.id}`;
+            btn.onclick = () => {
+                document.querySelectorAll('.vote-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedVictimId = p.id;
+                document.getElementById('selection-confirm').style.visibility = 'visible';
+            };
+            grid.appendChild(btn);
+        });
+        showSection('council-page');
+    }
+
+    function executeVote() {
+        const victim = state.players.find(p => p.id == selectedVictimId);
+        document.getElementById('result-message').innerText = victim.isSpy ? "SPY CAUGHT!" : "WRONG PERSON!";
+        showSection('result-page');
+    }
+
+    // Canvas Drawing Logic
+    let drawing = false;
+    canvas.addEventListener('touchstart', (e) => { drawing = true; ctx.beginPath(); const rect = canvas.getBoundingClientRect(); ctx.moveTo(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top); e.preventDefault(); });
+    canvas.addEventListener('touchmove', (e) => { if(!drawing) return; const rect = canvas.getBoundingClientRect(); ctx.lineTo(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top); ctx.stroke(); });
+    window.addEventListener('touchend', () => { if(drawing) { drawing = false; state.history.push(canvas.toDataURL()); } });
+    function undoStroke() { if(state.history.length > 0) { state.history.pop(); ctx.clearRect(0,0,canvas.width,canvas.height); if(state.history.length > 0) { const img = new Image(); img.src = state.history[state.history.length-1]; img.onload = () => ctx.drawImage(img,0,0); } } }
+    function clearCanvas() { ctx.clearRect(0,0,canvas.width,canvas.height); state.history = []; }
+    function confirmGoHome() { if(confirm("Quit?")) location.reload(); }
+</script>
+</body>
+</html>
